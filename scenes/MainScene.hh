@@ -17,17 +17,19 @@ public:
   virtual bool				initialize();
   virtual void				uninitialize();
 private: //variables
-  ParticleGroup<5000,
+  ParticleGroup<30000,
 		CompletePolicy< Particle,
 				ColorInitializer<Particle>,
-				SizeInitializer<Particle>,
+				CenterInitializer<Particle>,
+				ScaleInitializer<Particle>,
 				VelocityInitializer<Particle>,
 				LifeInitializer<Particle>,
 				NullPolicy<Particle> >,
 		CompletePolicy< Particle,
 				ColorAction<Particle>,
-				SizeAction<Particle>,
-				NullPolicy<Particle>, //GravityAction<Particle>,
+				CenterAction<Particle>,
+				ScaleAction<Particle>,
+				MoveAction<Particle>, //GravityAction<Particle>,
 				LifeAction<Particle>,
 				GravityAction<Particle> >,
 		Particle>

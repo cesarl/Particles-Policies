@@ -10,7 +10,8 @@ struct				Particle
   Vector3d			position;
   Vector3d			velocity;
   ALLEGRO_COLOR			color;
-  Vector3d			size;
+  Vector3d			center;
+  Vector3d			scale;
   int				lifetime;
 };
 

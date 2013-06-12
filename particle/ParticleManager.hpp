@@ -10,6 +10,7 @@ class					ParticleGroup
 public:
   InitializePolicy			initializePolicy;
   ActionPolicy				actionPolicy;
+
   explicit				ParticleGroup() throw(): currentCount(0) {}
   inline void				clear() throw() {
     currentCount = 0;
@@ -76,11 +77,13 @@ public:
       {
 	al_draw_tinted_scaled_rotated_bitmap(bmp,
 					     this->particlearray[cnt].color,
-					     this->particlearray[cnt].size.getX() / 2,
-					     this->particlearray[cnt].size.getY() / 2,
+					     this->particlearray[cnt].center.getX(),
+					     this->particlearray[cnt].center.getY(),
 					     this->particlearray[cnt].position.getX(),
 					     this->particlearray[cnt].position.getY(),
-					     1.0f, 1.0f, 0, 0);
+					     this->particlearray[cnt].scale.getX(),
+					     this->particlearray[cnt].scale.getY(),
+					     0, 0);
 	++cnt;
       }
   }
@@ -90,20 +93,22 @@ private:
   size_t				currentCount;
 };
 
-template				<class ParticleType, class ColorPolicy, class SizePolicy, class VelocityPolicy, class LifePolicy, class PositionPolicy>
+template				<class ParticleType, class ColorPolicy, class CenterPolicy, class ScalePolicy, class VelocityPolicy, class LifePolicy, class PositionPolicy>
 class					CompletePolicy
 {
 public:
   PositionPolicy			positionPlc;
   ColorPolicy				colorPlc;
-  SizePolicy				sizePlc;
+  CenterPolicy				centerPlc;
+  ScalePolicy				scalePlc;
   VelocityPolicy			velocityPlc;
   LifePolicy				lifePlc;
 
   inline void				prepareAction() throw() {
     this->positionPlc.prepareAction();
     this->velocityPlc.prepareAction();
-    this->sizePlc.prepareAction();
+    this->scalePlc.prepareAction();
+    this->centerPlc.prepareAction();
     this->colorPlc.prepareAction();
     this->lifePlc.prepareAction();
   }
@@ -111,7 +116,8 @@ public:
   {
     this->positionPlc(particle);
     this->velocityPlc(particle);
-    this->sizePlc(particle);
+    this->scalePlc(particle);
+    this->centerPlc(particle);
     this->colorPlc(particle);
     this->lifePlc(particle);
   }
@@ -153,23 +159,43 @@ public:
 };
 
 template				<class ParticleType>
-class					SizeInitializer
+class					CenterInitializer
 {
 public:
-  Vector3d				size;
+  Vector3d				center;
 public:
-  inline void				setSize(const Vector3d & s) throw()
+  inline void				setCenter(const Vector3d & s) throw()
   {
-    this->size = s;
+    this->center = s;
   }
-  explicit				SizeInitializer() throw() :
-    size(Vector3d(20, 20, 0))
+  explicit				CenterInitializer() throw() :
+    center(Vector3d(20, 20, 0))
   {}
   inline void				operator()(ParticleType & particle) const throw()
   {
-    particle.size = this->size;
+    particle.center = this->center;
   }
 };
+
+template				<class ParticleType>
+class					ScaleInitializer
+{
+public:
+  Vector3d				scale;
+public:
+  inline void				setScale(const Vector3d & s) throw()
+  {
+    this->scale = s;
+  }
+  explicit				ScaleInitializer() throw() :
+    scale(Vector3d(1.0f, 1.0f, 0.0f))
+  {}
+  inline void				operator()(ParticleType & particle) const throw()
+  {
+    particle.scale = this->scale;
+  }
+};
+
 
 template				<class ParticleType>
 class					VelocityInitializer
@@ -198,7 +224,6 @@ public:
   inline void				operator()(ParticleType &particle) const throw()
   {
     particle.velocity += this->gravity;
-    particle.position += particle.velocity;
   }
 };
 
@@ -215,7 +240,7 @@ public:
 
 
 template				<class ParticleType>
-class					SizeAction
+class					CenterAction
 {
 public:
   inline void				prepareAction() throw() {}
@@ -226,16 +251,27 @@ public:
 };
 
 template				<class ParticleType>
+class					ScaleAction
+{
+public:
+  inline void				prepareAction() throw() {}
+  inline void				operator()(ParticleType &particle) const throw()
+  {
+    particle.scale -= Vector3d(0.01f, 0.01f, 0.0f);
+  }
+};
+
+template				<class ParticleType>
 class					ColorAction
 {
 public:
   inline void				prepareAction() throw() {}
   inline void				operator()(ParticleType &particle) const throw()
   {
-    // float r, g, b, a;
-    // al_unmap_rgba_f(particle.color, &r, &g, &b, &a);
-    // a -= 0.01;
-    // particle.color = al_map_rgba_f(r, g, b, a);
+    float r, g, b, a;
+    al_unmap_rgba_f(particle.color, &r, &g, &b, &a);
+    a -= 0.009;
+    particle.color = al_map_rgba_f(r, g, b, a);
     // if (a <= 0.0f)
     //   particle.lifetime = 0;
     (void)particle;
