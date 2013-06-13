@@ -30,7 +30,6 @@ public:
   void					setPriority(int priority);
   void					setManager(SceneManager *manager);
   void					sendMessage(e_message type, bool active, std::string const & sceneTitle);
-  void					sendMessage(e_message type, void *data, std::string const & sceneTitle);
   virtual void				receiveMessage(e_message type, bool activate) = 0;
   virtual void				update(ALLEGRO_EVENT *event) = 0;
   virtual void				draw(ALLEGRO_EVENT *event) = 0;

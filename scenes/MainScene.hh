@@ -24,14 +24,16 @@ private: //variables
 				ScaleInitializer<Particle>,
 				VelocityInitializer<Particle>,
 				LifeInitializer<Particle>,
-				NullPolicy<Particle> >,
+				NullPolicy<Particle>,
+				RotationInitializer<Particle> >,
 		CompletePolicy< Particle,
 				ColorAction<Particle>,
 				CenterAction<Particle>,
 				ScaleAction<Particle>,
 				MoveAction<Particle>, //GravityAction<Particle>,
 				LifeAction<Particle>,
-				GravityAction<Particle> >,
+				GravityAction<Particle>,
+				RotationAction<Particle> >,
 		Particle>
   particles_;
 };

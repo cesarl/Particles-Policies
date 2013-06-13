@@ -4,67 +4,73 @@
 #include				<cmath>
 #include				"Particle.hh"
 
-template				<size_t size, class InitializePolicy, class ActionPolicy, class ParticleType>
+template				<size_t size, // number of particle in collection
+					 class InitPolicy, // particle initialisation
+					 class UpdatePolicy, // particle update
+					 class ParticleType> // particle type
 class					ParticleGroup
 {
 public:
-  InitializePolicy			initializePolicy;
-  ActionPolicy				actionPolicy;
+  InitPolicy			initPlc;
+  UpdatePolicy			updatePlc;
 
-  explicit				ParticleGroup() throw(): currentCount(0) {}
+  explicit				ParticleGroup() throw()
+    : length_(size),
+      cnt_(0)
+  {}
   inline void				clear() throw() {
-    currentCount = 0;
+    this->cnt_ = 0;
   }
   inline const ParticleType		*getParticles() const throw()
   {
-    if (particleCount() == 0)
+    if (this->getCounter() == 0)
       {
 	return NULL;
       }
-    return this->particlearray;
+    return this->list_;
   }
-  inline size_t				maxParticles() const throw()
+  inline size_t				getLength() const throw()
   {
-    return size;
+    return this->length_;
   }
-  inline size_t				particleCount() const throw()
+  inline size_t				getCounter() const throw()
   {
-    return this->currentCount;
+    return this->cnt_;
   }
   void					emit(const size_t &nb, const Vector3d &position)
   {
     size_t				amount;
 
     amount = nb;
-    if ((this->particleCount() + amount) > this->maxParticles())
+    if ((this->cnt_ + amount) > this->length_)
       {
-	amount = this->maxParticles() - this->particleCount();
+	amount = this->length_ - this->cnt_;
       }
     if (amount > 0)
       {
-	size_t				cnt;
+	size_t				i;
 
-	cnt = this->currentCount;
-	this->currentCount += amount;
-	for (; cnt < this->currentCount; ++cnt)
+	i = this->cnt_;
+	this->cnt_ += amount;
+	for (; i < this->cnt_; ++i)
 	  {
-	    this->particlearray[cnt].position = position;
-	    this->initializePolicy(this->particlearray[cnt]);
+	    this->list_[i].position = position;
+	    this->initPlc(this->list_[i]);
 	  }
       }
   }
   void					update() throw()
   {
-    this->actionPolicy.prepareAction();
-    for (size_t cnt = 0; cnt < this->currentCount; cnt++)
+    this->updatePlc.prepareAction();
+    for (size_t i = 0; i < this->cnt_; i++)
       {
-	this->actionPolicy(this->particlearray[cnt]);
-	if (this->particlearray[cnt].lifetime <= 0)
+	this->updatePlc(this->list_[i]);
+	if (this->list_[i].lifetime <= 0)
 	  {
-	    this->particlearray[cnt] = this->particlearray[this->currentCount - 1];
-	    --this->currentCount;
+	    this->list_[i] = this->list_[this->cnt_ - 1];
+	    --this->cnt_;
 	  }
-++cnt;
+	++i;
       }
   }
 
@@ -73,27 +79,27 @@ public:
     static ALLEGRO_BITMAP *bmp;
 
     bmp = ImageManager::getInstance()->load("assets/imgs/point.png");
-    for (size_t cnt = 0; cnt < this->currentCount; cnt++)
+    for (size_t i = 0; i < this->cnt_; i++)
       {
 	al_draw_tinted_scaled_rotated_bitmap(bmp,
-					     this->particlearray[cnt].color,
-					     this->particlearray[cnt].center.getX(),
-					     this->particlearray[cnt].center.getY(),
-					     this->particlearray[cnt].position.getX(),
-					     this->particlearray[cnt].position.getY(),
-					     this->particlearray[cnt].scale.getX(),
-					     this->particlearray[cnt].scale.getY(),
-					     0, 0);
-	++cnt;
+					     this->list_[i].color,
+					     this->list_[i].center.getX(),
+					     this->list_[i].center.getY(),
+					     this->list_[i].position.getX(),
+					     this->list_[i].position.getY(),
+					     this->list_[i].scale.getX(),
+					     this->list_[i].scale.getY(),
+					     this->list_[i].angle, 0);
       }
   }
 
 private:
-  ParticleType				particlearray[size];
-  size_t				currentCount;
+  ParticleType				list_[size];
+  size_t				length_;
+  size_t				cnt_;
 };
 
-template				<class ParticleType, class ColorPolicy, class CenterPolicy, class ScalePolicy, class VelocityPolicy, class LifePolicy, class PositionPolicy>
+template				<class ParticleType, class ColorPolicy, class CenterPolicy, class ScalePolicy, class VelocityPolicy, class LifePolicy, class PositionPolicy, class RotationPolicy>
 class					CompletePolicy
 {
 public:
@@ -103,6 +109,7 @@ public:
   ScalePolicy				scalePlc;
   VelocityPolicy			velocityPlc;
   LifePolicy				lifePlc;
+  RotationPolicy			rotationPlc;
 
   inline void				prepareAction() throw() {
     this->positionPlc.prepareAction();
@@ -111,6 +118,7 @@ public:
     this->centerPlc.prepareAction();
     this->colorPlc.prepareAction();
     this->lifePlc.prepareAction();
+    this->rotationPlc.prepareAction();
   }
   inline void				operator() (ParticleType &particle) const throw()
   {
@@ -120,6 +128,7 @@ public:
     this->centerPlc(particle);
     this->colorPlc(particle);
     this->lifePlc(particle);
+    this->rotationPlc(particle);
   }
 };
 
@@ -209,6 +218,19 @@ public:
   }
 };
 
+template				<class ParticleType>
+class					RotationInitializer
+{
+public:
+  explicit				RotationInitializer() throw()
+  {}
+  inline void				operator()(ParticleType & particle) const throw()
+  {
+    particle.angle = (rand() % 20) / 10.0f;
+    particle.rotationForce = (rand() % 3) / 10.0f;
+  }
+};
+
 
 template				<class ParticleType>
 class					GravityAction
@@ -270,10 +292,10 @@ public:
   {
     float r, g, b, a;
     al_unmap_rgba_f(particle.color, &r, &g, &b, &a);
-    a -= 0.009;
+    a -= 0.005;
     particle.color = al_map_rgba_f(r, g, b, a);
-    // if (a <= 0.0f)
-    //   particle.lifetime = 0;
+    if (a <= 0.0f)
+      particle.lifetime = -1;
     (void)particle;
   }
 };
@@ -287,6 +309,24 @@ public:
   inline void				operator()(ParticleType &particle) const throw()
   {
     particle.lifetime -= this->lifeless;
+  }
+};
+
+template				<class ParticleType>
+class					RotationAction
+{
+public:
+  inline void				prepareAction() throw() {}
+  inline void				operator()(ParticleType &particle) const throw()
+  {
+    particle.rotationForce -= 0.0005f;
+    if (particle.rotationForce <= 0.0f)
+      return;
+    particle.angle += particle.rotationForce;
+    if (particle.angle > 6.2f)
+      particle.angle = 0.0f;
+    if (particle.angle < 0.0f)
+      particle.angle = 6.2f;
   }
 };
 

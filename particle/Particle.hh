@@ -13,6 +13,8 @@ struct				Particle
   Vector3d			center;
   Vector3d			scale;
   int				lifetime;
+  float				angle;
+  float				rotationForce;
 };
 
 #endif				// __PARTICLE_HH__

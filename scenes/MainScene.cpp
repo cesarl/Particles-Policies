@@ -9,7 +9,7 @@ MainScene::~MainScene()
 
 void					MainScene::update(ALLEGRO_EVENT *event)
 {
-  this->particles_.emit(10, Vector3d(500, 500, 0));
+  this->particles_.emit(10, Vector3d(500, 100, 0));
   this->particles_.update();
   (void)(event);
 }
@@ -34,18 +34,18 @@ void					MainScene::receiveMessage(e_message type, bool activate)
 bool					MainScene::initialize()
 {
   // at init : life range - between 10 and 100 iterations
-  this->particles_.initializePolicy.lifePlc.setLifeRange(100, 300);
+  this->particles_.initPlc.lifePlc.setLifeRange(100, 300);
   // at init : center of particle
-  this->particles_.initializePolicy.centerPlc.center = Vector3d(20, 20, 0);
+  this->particles_.initPlc.centerPlc.center = Vector3d(40, 40, 0);
 
   // at intit : color of particles
   // this->particles_.initializePolicy.colorPlc.color = al_map_rgba(255, 0, 255, 255);
 
   // at update : particle lose X unity of life
-  this->particles_.actionPolicy.lifePlc.lifeless = 1;
+  this->particles_.updatePlc.lifePlc.lifeless = 1;
 
   // at update : particle velocity add gravity of X
-  this->particles_.actionPolicy.positionPlc.gravity = Vector3d(0.0f, 0.03f, 0.0f);
+  this->particles_.updatePlc.positionPlc.gravity = Vector3d(0.0f, 0.03f, 0.0f);
   return true;
 }
 
